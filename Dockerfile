@@ -1,26 +1,55 @@
-# Use the official Golang image as a parent image
-FROM golang:alpine AS builder
+ARG  BUILDER_IMAGE=golang:alpine
+############################
+# STEP 1 build executable binary
+############################
+FROM ${BUILDER_IMAGE} as builder
 
-# Set the working directory inside the container
-WORKDIR /app
+# Install git + SSL ca certificates.
+# Git is required for fetching the dependencies.
+# Ca-certificates is required to call HTTPS endpoints.
+RUN apk update && apk add --no-cache git ca-certificates tzdata && update-ca-certificates
 
-# Copy the entire project directory to the container
+# Create appuser
+ENV USER=appuser
+ENV UID=10001
+
+# See https://stackoverflow.com/a/55757473/12429735
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+WORKDIR $GOPATH/src/mypackage/myapp/
 COPY . .
 
-# Fetch dependencies and build the binary
-RUN go mod download && \
-    go build -o main .
+# Fetch dependencies.
+RUN go get -d -v
 
-# Create a new image from scratch
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' -a \
+    -o /go/bin/main .
+
+############################
+# STEP 2 build a small image
+############################
 FROM scratch
 
-# Copy the binary and any other files needed from the builder image
-COPY --from=builder /app/main /app/main
+# Import from builder.
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
 
-# Set the working directory inside the container
-WORKDIR /app
+# Copy our static executable
+COPY --from=builder /go/bin/main /go/bin/main
 
-# Run the binary
-ENTRYPOINT ["/app/main"]
+# Use an unprivileged user.
+USER appuser:appuser
 
+# Run the main binary.
+ENTRYPOINT ["/go/bin/main"]
 
