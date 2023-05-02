@@ -3,6 +3,8 @@ package controllers
 import (
 	"net/http"
 
+	"project/database"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -12,15 +14,17 @@ import (
 	"github.com/gin-contrib/sessions"
 )
 
-type AuthController struct {
-	db *gorm.DB
+type UserRepo struct {
+	Db *gorm.DB
 }
 
-func NewAuthController(db *gorm.DB) *AuthController {
-	return &AuthController{db: db}
+func NewUserController() *UserRepo {
+	db := database.InitDb()
+	db.AutoMigrate(&models.User{})
+	return &UserRepo{Db: db}
 }
 
-func (ac *AuthController) Register(c *gin.Context) {
+func (repository *UserRepo) Register(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -35,7 +39,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 	}
 	user.Password = string(hashedPassword)
 
-	if err := ac.db.Create(&user).Error; err != nil {
+	if err := repository.Db.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -43,7 +47,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
-func (ac *AuthController) Login(c *gin.Context) {
+func (repository *UserRepo) Login(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -52,7 +56,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	// Retrieve user record from database
 	var dbUser models.User
-	if err := ac.db.Where("username = ?", user.Username).First(&dbUser).Error; err != nil {
+	if err := repository.Db.Where("username = ?", user.Username).First(&dbUser).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -74,7 +78,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
 }
 
-func (ac *AuthController) Logout(c *gin.Context) {
+func (repository *UserRepo) Logout(c *gin.Context) {
 	// Clear session cookie
 	session := sessions.Default(c)
 	session.Clear()
