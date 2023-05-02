@@ -5,7 +5,7 @@ FROM golang:alpine AS builder
 WORKDIR /app
 
 # Copy the entire project directory to the container
-COPY ./project .
+COPY . .
 
 # Fetch dependencies and build the binary
 RUN go mod download && \
