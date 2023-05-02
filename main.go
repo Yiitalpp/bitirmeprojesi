@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"project/controllers"
-	"project/database"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,12 +19,10 @@ func setupRouter() *gin.Engine {
 		c.JSON(http.StatusOK, "pong")
 	})
 
-	db := database.InitDb()
-	authController := controllers.NewAuthController(db)
-
-	r.POST("/register", authController.Register)
-	r.POST("/login", authController.Login)
-	r.POST("/logout", authController.Logout)
+	userRepo := controllers.NewUserController()
+	r.POST("/register", userRepo.Register)
+	r.POST("/login", userRepo.Login)
+	r.POST("/logout", userRepo.Logout)
 
 	return r
 
