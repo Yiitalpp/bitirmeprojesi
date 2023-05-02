@@ -1,0 +1,28 @@
+version: '2.4'
+services:
+  db:
+    container_name: project-db
+    image: mariadb
+    platform: linux/amd64
+    env_file:
+      - pro.env
+  pma:
+    container_name: 'project-pma'
+    image: phpmyadmin/phpmyadmin
+    platform: linux/amd64
+    ports:
+    - "8000:80"
+    links:
+      - db:mysql
+    env_file:
+      - pro.env
+  app:
+    container_name: project-app
+    platform: linux/amd64
+    build: .
+    ports:
+    - "80:8080"
+    links:
+      - db:mysql
+    env_file:
+      - pro.env
