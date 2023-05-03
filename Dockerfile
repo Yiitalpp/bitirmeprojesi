@@ -1,55 +1,31 @@
-ARG  BUILDER_IMAGE=golang:alpine
-############################
-# STEP 1 build executable binary
-############################
-FROM ${BUILDER_IMAGE} as builder
+# Use golang:alpine as the base image
+FROM golang:alpine as builder
 
-# Install git + SSL ca certificates.
-# Git is required for fetching the dependencies.
-# Ca-certificates is required to call HTTPS endpoints.
-RUN apk update && apk add --no-cache git ca-certificates tzdata && update-ca-certificates
+# Set the working directory
+WORKDIR /app
 
-# Create appuser
-ENV USER=appuser
-ENV UID=10001
-
-# See https://stackoverflow.com/a/55757473/12429735
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    "${USER}"
-WORKDIR $GOPATH/src/mypackage/myapp/
+# Copy the source code into the container
 COPY . .
 
-# Fetch dependencies.
+# Install dependencies
+RUN apk update && apk add --no-cache git
 RUN go get -d -v
+RUN go install -v
 
-# Build the binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' -a \
-    -o /go/bin/main .
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
 
-############################
-# STEP 2 build a small image
-############################
-FROM scratch
+# Use alpine as the base image
+FROM alpine:latest
 
-# Import from builder.
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /etc/group /etc/group
+# Set the working directory
+WORKDIR /root/
 
-# Copy our static executable
-COPY --from=builder /go/bin/main /go/bin/main
+# Copy the binary from the builder image
+COPY --from=builder /app/app .
 
-# Use an unprivileged user.
-USER appuser:appuser
+# Expose port 8080
+EXPOSE 8080
 
-# Run the main binary.
-ENTRYPOINT ["/go/bin/main"]
-
+# Set the entry point for the container
+ENTRYPOINT ["/root/app"]
