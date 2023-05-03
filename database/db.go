@@ -9,8 +9,8 @@ import (
 )
 
 var DB_USERNAME = "root"
-var DB_PASSWORD = "projectpass"
-var DB_NAME = "project"
+var DB_PASSWORD = "projectDbPass"
+var DB_NAME = "databasepr"
 var DB_HOST = "project-db"
 var DB_PORT = "3306"
 
