@@ -6,8 +6,6 @@ services:
     platform: linux/amd64
     env_file:
       - pro.env
-    networks:
-      - app_net
   pma:
     container_name: 'project-pma'
     image: phpmyadmin/phpmyadmin
@@ -18,8 +16,6 @@ services:
       - db:mysql
     env_file:
       - pro.env
-    networks:
-      - app_net
   app:
     container_name: project-app
     platform: linux/amd64
@@ -30,8 +26,3 @@ services:
       - db:mysql
     env_file:
       - pro.env
-    networks:
-      - app_net
-
-networks:
-  app_net:
