@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"crypto/rand"
 	"net/http"
 
 	"project/database"
@@ -31,13 +32,26 @@ func (repository *UserRepo) Register(c *gin.Context) {
 		return
 	}
 
-	// Hash password before storing it in the database
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	// Generate a random salt
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Concatenate the salt and password before hashing
+	passwordWithSalt := append([]byte(user.Password), salt...)
+
+	// Hash password with salt before storing it in the database
+	hashedPassword, err := bcrypt.GenerateFromPassword(passwordWithSalt, bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	user.Password = string(hashedPassword)
+
+	// Store the salt in the database along with the hashed password
+	user.Salt = string(salt)
 
 	if err := repository.Db.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -62,7 +76,9 @@ func (repository *UserRepo) Login(c *gin.Context) {
 	}
 
 	// Compare hashed passwords
-	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.Password)); err != nil {
+	salt := []byte(dbUser.Salt)
+	password := []byte(user.Password + string(salt))
+	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), password); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
