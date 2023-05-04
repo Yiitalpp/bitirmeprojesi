@@ -1,12 +1,13 @@
 package controllers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 
 	"project/database"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 	"project/models"
@@ -32,12 +33,8 @@ func (repository *UserRepo) Register(c *gin.Context) {
 	}
 
 	// Hash password before storing it in the database
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	user.Password = string(hashedPassword)
+	hash := sha256.Sum256([]byte(user.Password))
+	user.Password = hex.EncodeToString(hash[:])
 
 	if err := repository.Db.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -62,7 +59,8 @@ func (repository *UserRepo) Login(c *gin.Context) {
 	}
 
 	// Compare hashed passwords
-	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.Password)); err != nil {
+	hash := sha256.Sum256([]byte(user.Password))
+	if dbUser.Password != hex.EncodeToString(hash[:]) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
