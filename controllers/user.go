@@ -45,12 +45,7 @@ func (repository *UserRepo) Register(c *gin.Context) {
 	}
 
 	// Log the user in
-	session := sessions.Default(c)
-	session.Set("user_id", user.ID)
-	if err := session.Save(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	repository.Login(c)
 
 	c.JSON(http.StatusOK, gin.H{"message": "User registered and logged in successfully"})
 }
