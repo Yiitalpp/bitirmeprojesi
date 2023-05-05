@@ -44,10 +44,7 @@ func (repository *UserRepo) Register(c *gin.Context) {
 		return
 	}
 
-	// Log the user in
-	repository.Login(c)
-
-	c.JSON(http.StatusOK, gin.H{"message": "User registered and logged in successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
 func (repository *UserRepo) Login(c *gin.Context) {
