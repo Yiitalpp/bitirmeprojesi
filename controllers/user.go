@@ -68,10 +68,13 @@ func (repository *UserRepo) Register(c *gin.Context) {
 			return
 		}
 	*/
-	if err := sendActivationEmail(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send activation email"})
-		return
-	}
+
+	/*
+		if err := sendActivationEmail(user); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send activation email"})
+			return
+		}
+	*/
 
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
