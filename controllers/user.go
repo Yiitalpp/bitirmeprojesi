@@ -140,7 +140,7 @@ func (repository *UserRepo) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := models.CreateToken(repository.Db, user)
+	//token, err := models.CreateToken(repository.Db, user)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -153,7 +153,7 @@ func (repository *UserRepo) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
+	//c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
 	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
 }
 
