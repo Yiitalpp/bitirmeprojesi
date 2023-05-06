@@ -15,8 +15,6 @@ import (
 	"gorm.io/gorm"
 
 	"project/models"
-
-	"github.com/gin-contrib/sessions"
 )
 
 type UserRepo struct {
@@ -145,26 +143,30 @@ func (repository *UserRepo) Login(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	/*
+		// Set session cookie
+		session := sessions.Default(c)
+		session.Set("user_id", user.ID)
+		if err := session.Save(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	*/
 
-	// Set session cookie
-	session := sessions.Default(c)
-	session.Set("user_id", user.ID)
-	if err := session.Save(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 	//c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
 	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
 }
 
 func (repository *UserRepo) Logout(c *gin.Context) {
-	// Clear session cookie
-	session := sessions.Default(c)
-	session.Clear()
-	if err := session.Save(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	/*
+		// Clear session cookie
+		session := sessions.Default(c)
+		session.Clear()
+		if err := session.Save(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User logged out successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "User logged out successfully"})
+	*/
 }
