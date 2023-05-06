@@ -19,7 +19,7 @@ func setupRouter() *gin.Engine {
 		c.JSON(http.StatusOK, "pong")
 	})
 
-	tokenRepo := controllers.NewTokenController()
+	//tokenRepo := controllers.NewTokenController()
 	userRepo := controllers.NewUserController()
 	r.POST("/register", userRepo.Register)
 	r.POST("/login", userRepo.Login)
