@@ -21,6 +21,11 @@ func setupRouter() *gin.Engine {
 
 	//tokenRepo := controllers.NewTokenController()
 	userRepo := controllers.NewUserController()
+	r.POST("/users", userRepo.CreateUser)
+	r.GET("/users", userRepo.GetUsers)
+	r.GET("/users/:id", userRepo.GetUser)
+	r.PUT("/users/:id", userRepo.UpdateUser)
+	r.DELETE("/users/:id", userRepo.DeleteUser)
 	r.POST("/register", userRepo.Register)
 	r.POST("/login", userRepo.Login)
 	r.POST("/logout", userRepo.Logout)

@@ -3,6 +3,7 @@ package controllers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"log"
 	"net/http"
 	"net/smtp"
@@ -29,6 +30,18 @@ func NewUserController() *UserRepo {
 	db := database.InitDb()
 	db.AutoMigrate(&models.User{})
 	return &UserRepo{Db: db}
+}
+
+// create User
+func (repository *UserRepo) CreateUser(c *gin.Context) {
+	var User models.User
+	c.BindJSON(&User)
+	err := models.CreateUser(repository.Db, &User)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	c.JSON(http.StatusOK, User)
 }
 
 func (repository *UserRepo) Register(c *gin.Context) {
@@ -109,9 +122,11 @@ func sendActivationEmail(user models.User) error {
 
 func (repository *UserRepo) Login(c *gin.Context) {
 	var user models.User
+	c.BindJSON(&user)
 	err := models.Login(repository.Db, &user, user.Email)
+
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	/*
@@ -151,6 +166,67 @@ func (repository *UserRepo) Login(c *gin.Context) {
 
 	//c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
 	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
+}
+
+// get Users
+func (repository *UserRepo) GetUsers(c *gin.Context) {
+	var User []models.User
+	err := models.GetUsers(repository.Db, &User)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	c.JSON(http.StatusOK, User)
+}
+
+// get User by id
+func (repository *UserRepo) GetUser(c *gin.Context) {
+	id, _ := c.Params.Get("id")
+	var User models.User
+	err := models.GetUser(repository.Db, &User, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	c.JSON(http.StatusOK, User)
+}
+
+// update User
+func (repository *UserRepo) UpdateUser(c *gin.Context) {
+	id, _ := c.Params.Get("id")
+	var User models.User
+	c.BindJSON(&User)
+	err := models.UpdateUser(repository.Db, &User, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	c.JSON(http.StatusOK, User)
+}
+
+// delete Country
+func (repository *UserRepo) DeleteUser(c *gin.Context) {
+	id, _ := c.Params.Get("id")
+	var User models.User
+	err := models.DeleteUser(repository.Db, &User, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "User deleted"})
 }
 
 func (repository *UserRepo) Logout(c *gin.Context) {
