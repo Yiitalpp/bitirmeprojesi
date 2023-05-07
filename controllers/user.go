@@ -4,12 +4,15 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/smtp"
 	"os"
 	"project/database"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -121,10 +124,48 @@ func sendActivationEmail(user models.User) error {
 	return nil
 }
 
+func AuthMiddleware(tokenRepo *TokenRepo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString := c.GetHeader("Authorization")
+
+		if tokenString == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization token not provided"})
+			return
+		}
+
+		// Strip "Bearer " prefix
+		if len(tokenString) > 7 && strings.ToUpper(tokenString[0:7]) == "BEARER " {
+			tokenString = tokenString[7:]
+		}
+
+		fmt.Println("Token string:", tokenString) // logging added here
+
+		// Get the token from the database based on the token string
+		tokenObj, err := tokenRepo.GetTokenByTokenString(tokenString)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Token not validated"})
+			return
+		}
+
+		// Check if the token is valid based on its start and expiry dates
+		if time.Now().Before(*tokenObj.StartingDate) || time.Now().After(*tokenObj.EndingDate) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization token"})
+			return
+		}
+
+		// Set user ID in context for further use
+		c.Set("user_id", tokenObj.UserID)
+		c.Next()
+
+	}
+}
+
 func (repository *UserRepo) Login(c *gin.Context) {
 	var user models.User
 	c.BindJSON(&user)
-	err := models.Login(repository.Db, &user, user.Email)
+	email := user.Email
+	password := user.Password
+	err := models.Login(repository.Db, &user, email)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -140,7 +181,7 @@ func (repository *UserRepo) Login(c *gin.Context) {
 	*/
 
 	// Compare hashed passwords
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -150,7 +191,7 @@ func (repository *UserRepo) Login(c *gin.Context) {
 		return
 	}
 
-	//token, err := models.CreateToken(repository.Db, user)
+	token, err := models.CreateToken(repository.Db, user)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -165,7 +206,7 @@ func (repository *UserRepo) Login(c *gin.Context) {
 		}
 	*/
 
-	//c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
+	c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
 	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
 }
 
