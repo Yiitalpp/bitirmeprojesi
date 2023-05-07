@@ -19,7 +19,16 @@ func setupRouter() *gin.Engine {
 		c.JSON(http.StatusOK, "pong")
 	})
 
-	//tokenRepo := controllers.NewTokenController()
+	tokenRepo := controllers.NewTokenController()
+	authMiddleware := controllers.AuthMiddleware(tokenRepo)
+
+	// Protected routes that require authentication
+	protectedRoutes := r.Group("/")
+	protectedRoutes.Use(authMiddleware)
+	{
+
+	}
+
 	userRepo := controllers.NewUserController()
 	r.POST("/users", userRepo.CreateUser)
 	r.GET("/users", userRepo.GetUsers)
