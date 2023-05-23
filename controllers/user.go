@@ -77,6 +77,8 @@ func (repository *UserRepo) Register(c *gin.Context) {
 		return
 	}
 
+	user.Active = true
+
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
@@ -208,6 +210,66 @@ func (repository *UserRepo) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
 	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
+}
+
+// Book a ticket
+func (repository *UserRepo) BookTicket(c *gin.Context) {
+	// Get user ID from the context
+	userID, _ := c.Get("user_id")
+
+	// Get the ticket ID from the request parameters
+	ticketID := c.Param("ticket_id")
+
+	// Retrieve the ticket from the database
+	var ticket models.Ticket
+	err := models.GetTicket(repository.Db, &ticket, ticketID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Check if the ticket is available
+	if ticket.NofSeats == "0" {
+		c.JSON(http.StatusConflict, gin.H{"error": "Ticket is not available"})
+		return
+	}
+
+	// Convert the number of seats to an integer
+	numSeats, err := strconv.Atoi(ticket.NofSeats)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Decrement the number of seats available in the ticket
+	numSeats -= 1
+	ticket.NofSeats = strconv.Itoa(numSeats)
+
+	// Update the ticket in the database
+	err = models.UpdateTicket(repository.Db, &ticket, ticketID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Create a new booked ticket record
+	bookedTicket := models.BTicket{
+		TicketID: ticket.ID,
+		UserID:   userID.(uint),
+	}
+
+	// Create the booked ticket in the database
+	err = models.CreateBTicket(repository.Db, &bookedTicket)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Ticket booked successfully"})
 }
 
 // get Users
