@@ -23,6 +23,7 @@ func setupRouter() *gin.Engine {
 	authMiddleware := controllers.AuthMiddleware(tokenRepo)
 
 	userRepo := controllers.NewUserController()
+
 	r.POST("/users", userRepo.CreateUser)
 	r.GET("/users", userRepo.GetUsers)
 	r.GET("/users/:id", userRepo.GetUser)
@@ -55,12 +56,13 @@ func setupRouter() *gin.Engine {
 	r.PUT("/planes/:id", planeRepo.UpdatePlane)
 	r.DELETE("/planes/:id", planeRepo.DeletePlane)
 
+	//r.POST("/tickets/:ticket_id/book", userRepo.BookTicket)
+
 	// Protected routes that require authentication
 	protectedRoutes := r.Group("/")
 	protectedRoutes.Use(authMiddleware)
 	{
 		protectedRoutes.POST("/tickets/:ticket_id/book", userRepo.BookTicket)
-
 	}
 
 	return r

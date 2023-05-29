@@ -208,14 +208,18 @@ func (repository *UserRepo) Login(c *gin.Context) {
 		}
 	*/
 
-	c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate})
-	c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
+	c.JSON(http.StatusOK, gin.H{"token": token.Token, "start": token.StartingDate, "expiry": token.EndingDate, "message": "User logged in successfully"})
+	//c.JSON(http.StatusOK, gin.H{"message": "User logged in successfully"})
 }
 
 // Book a ticket
 func (repository *UserRepo) BookTicket(c *gin.Context) {
 	// Get user ID from the context
-	userID, _ := c.Get("user_id")
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user ID"})
+		return
+	}
 
 	// Get the ticket ID from the request parameters
 	ticketID := c.Param("ticket_id")
@@ -255,11 +259,17 @@ func (repository *UserRepo) BookTicket(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
+	// Convert the user ID to the desired type (int)
+	userIDInt, ok := userID.(int)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to convert user ID to int"})
+		return
+	}
 
 	// Create a new booked ticket record
 	bookedTicket := models.BTicket{
 		TicketID: ticket.ID,
-		UserID:   userID.(uint),
+		UserID:   userIDInt,
 	}
 
 	// Create the booked ticket in the database
