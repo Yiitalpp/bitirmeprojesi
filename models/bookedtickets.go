@@ -6,11 +6,11 @@ import (
 
 type BTicket struct {
 	gorm.Model
-	ID       uint   `gorm:"primaryKey"`
+	ID       int `gorm:"primaryKey"`
+	TicketID int
 	Ticket   Ticket `gorm:"foreignKey:TicketID"`
-	TicketID uint
+	UserID   int
 	User     User `gorm:"foreignKey:UserID"`
-	UserID   uint
 }
 
 // create a Plane

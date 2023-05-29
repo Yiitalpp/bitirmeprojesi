@@ -6,7 +6,7 @@ import (
 
 type Plane struct {
 	gorm.Model
-	ID         uint
+	ID         int
 	FirmName   string
 	SeatNumber string
 }

@@ -9,7 +9,7 @@ import (
 
 type Token struct {
 	gorm.Model
-	UserID       uint
+	UserID       int
 	Token        string
 	StartingDate *time.Time
 	EndingDate   *time.Time

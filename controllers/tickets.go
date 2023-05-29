@@ -65,7 +65,7 @@ func (repository *TicketRepo) FilterTickets(c *gin.Context) {
 			return
 		}
 		departureDateFormatted := departureDate.Format("2006-01-02")
-		query = query.Where("DATE(`DepartureDate`) = ?", departureDateFormatted)
+		query = query.Where("DATE(`departure_date`) = ?", departureDateFormatted)
 	}
 
 	if returnDateStr != "" {
@@ -75,7 +75,7 @@ func (repository *TicketRepo) FilterTickets(c *gin.Context) {
 			return
 		}
 		returnDateFormatted := returnDate.Format("2006-01-02")
-		query = query.Where("DATE(`ReturnDate`) = ?", returnDateFormatted)
+		query = query.Where("DATE(`return_date`) = ?", returnDateFormatted)
 	}
 
 	var tickets []models.Ticket
