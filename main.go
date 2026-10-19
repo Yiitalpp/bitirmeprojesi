@@ -14,7 +14,9 @@ func main() {
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
-
+        
+	r.Use(metricsMiddleware())
+	
 	r.GET("ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "pong")
 	})
@@ -55,6 +57,9 @@ func setupRouter() *gin.Engine {
 	r.GET("/planes/:id", planeRepo.GetPlane)
 	r.PUT("/planes/:id", planeRepo.UpdatePlane)
 	r.DELETE("/planes/:id", planeRepo.DeletePlane)
+	
+
+        r.GET("/metrics", metricsHandler())
 
 	//r.POST("/tickets/:ticket_id/book", userRepo.BookTicket)
 
